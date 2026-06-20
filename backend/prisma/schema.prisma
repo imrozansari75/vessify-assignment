@@ -18,6 +18,7 @@ model User {
   updatedAt     DateTime  @updatedAt
   sessions      Session[]
   accounts      Account[]
+  members       Member[]
 
   @@unique([email])
   @@map("user")
@@ -69,4 +70,44 @@ model Verification {
 
   @@index([identifier])
   @@map("verification")
+}
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+
+  members      Member[]
+  transactions Transaction[]
+
+  @@map("organization")
+}
+
+model Member {
+  id             String @id @default(cuid())
+  userId         String
+  organizationId String
+  role           String @default("member")
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId])
+  @@map("member")
+}
+
+model Transaction {
+  id             String   @id @default(cuid())
+  date           DateTime
+  description    String
+  amount         Float
+  balance        Float?
+  confidence     Float
+  userId         String
+  organizationId String
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@map("transaction")
 }
