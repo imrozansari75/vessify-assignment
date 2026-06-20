@@ -33,6 +33,12 @@ export const api = {
 
   getOrganizations: () => request("/api/organizations"),
 
+  createOrganization: (name: string) =>
+    request("/api/organizations", {
+      method: "POST",
+      body: JSON.stringify({ name }),
+    }),
+
   getTransactions: (orgId: string) =>
     request("/api/transactions", {
       headers: { "x-organization-id": orgId },

@@ -6,6 +6,10 @@ interface Props {
   onExtract: (text: string) => Promise<void>;
 }
 
+function getErrorMessage(err: unknown) {
+  return err instanceof Error ? err.message : "Unable to extract transaction";
+}
+
 export function TransactionExtractor({ onExtract }: Props) {
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
@@ -23,8 +27,8 @@ export function TransactionExtractor({ onExtract }: Props) {
       setText("");
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
-    } catch (err: any) {
-      setError(err.message || "Unable to extract transaction");
+    } catch (err: unknown) {
+      setError(getErrorMessage(err));
     } finally {
       setLoading(false);
     }

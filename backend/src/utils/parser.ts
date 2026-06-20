@@ -36,15 +36,15 @@ function parseDate(s: string): Date | null {
 }
 
 function parseAmount(s: string): number {
-  const cleaned = s.replace(/[₹,]/g, "").trim()
+  const cleaned = s.replace(/[\u20b9,]/g, "").trim()
   return parseFloat(cleaned)
 }
 
 function trySample1(text: string): ParsedTransaction | null {
   const dateRe = /^Date:\s*(.+)$/im
   const descRe = /^Description:\s*(.+)$/im
-  const amtRe = /^Amount:\s*(-?[₹,]?[\d,]+\.?\d*)/im
-  const balRe = /^Balance after transaction:\s*(-?[₹,]?[\d,]+\.?\d*)/im
+  const amtRe = /^Amount:\s*(-?[\u20b9,]?[\d,]+\.?\d*)/im
+  const balRe = /^Balance after transaction:\s*(-?[\u20b9,]?[\d,]+\.?\d*)/im
 
   const dateMatch = text.match(dateRe)
   const descMatch = text.match(descRe)
@@ -71,10 +71,10 @@ function trySample2(text: string): ParsedTransaction | null {
 
   const descMatch = lines[0].match(/^(.+?)\s*$/)
 
-  const line1Re = /^(\d{1,2}\/\d{1,2}\/\d{4})\s*[→\-]\s*[₹]?([\d,]+\.?\d*)\s+debited/i
+  const line1Re = /^(\d{1,2}\/\d{1,2}\/\d{4})\s*[\u2192\-]\s*[\u20b9]?([\d,]+\.?\d*)\s+debited/i
   const line1Match = lines[1].match(line1Re)
 
-  const balRe = /^Available Balance\s*[→\-]\s*[₹]?([\d,]+\.?\d*)/im
+  const balRe = /^Available Balance\s*[\u2192\-]\s*[\u20b9]?([\d,]+\.?\d*)/im
   const balMatch = text.match(balRe)
 
   if (!descMatch || !line1Match) return null
@@ -92,7 +92,7 @@ function trySample2(text: string): ParsedTransaction | null {
 }
 
 function trySample3(text: string): ParsedTransaction | null {
-  const re = /^txn\S+\s+(\d{4}-\d{2}-\d{2})\s+(.+?)\s+[₹]?([\d,]+\.?\d*)\s+Dr\s+Bal\s+([\d,]+\.?\d*)\s+(.+)$/i
+  const re = /^txn\S+\s+(\d{4}-\d{2}-\d{2})\s+(.+?)\s+[\u20b9]?([\d,]+\.?\d*)\s+Dr\s+Bal\s+([\d,]+\.?\d*)\s+(.+)$/i
   const match = text.match(re)
   if (!match) return null
 
@@ -106,11 +106,9 @@ function trySample3(text: string): ParsedTransaction | null {
 }
 
 export function parseTransaction(text: string): ParsedTransaction {
-  return trySample1(text) || trySample2(text) || trySample3(text) || {
-    date: new Date(),
-    description: text.slice(0, 100),
-    amount: 0,
-    balance: null,
-    confidence: 0,
+  const parsed = trySample1(text) || trySample2(text) || trySample3(text)
+  if (!parsed) {
+    throw new Error("Unable to extract transaction")
   }
+  return parsed
 }

@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  useCallback,
-  type ReactNode,
-} from "react";
+import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
 import { api } from "./api";
 
 interface User {
@@ -31,7 +24,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const refreshSession = useCallback(async () => {
+  const refreshSession = async () => {
     try {
       const data = await api.getSession();
       setUser(data?.user || null);
@@ -40,11 +33,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  };
 
   useEffect(() => {
-    refreshSession();
-  }, [refreshSession]);
+    let cancelled = false;
+
+    async function loadSession() {
+      try {
+        const data = await api.getSession();
+        if (!cancelled) setUser(data?.user || null);
+      } catch {
+        if (!cancelled) setUser(null);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    void loadSession();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const signIn = async (email: string, password: string) => {
     await api.signIn(email, password);

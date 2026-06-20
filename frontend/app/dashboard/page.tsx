@@ -21,7 +21,7 @@ interface Transaction {
 export default function DashboardPage() {
   const router = useRouter();
   const { user, loading: authLoading, signOut } = useAuth();
-  const { orgs, selectedOrg, setOrgs, selectOrg } = useOrg();
+  const { selectedOrg, setOrgs, selectOrg } = useOrg();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [txLoading, setTxLoading] = useState(false);
   const [error, setError] = useState("");
@@ -52,13 +52,28 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!selectedOrg) return;
-    setTxLoading(true);
-    setError("");
-    api
-      .getTransactions(selectedOrg.id)
-      .then(setTransactions)
-      .catch(() => setError("Failed to load transactions"))
-      .finally(() => setTxLoading(false));
+
+    let cancelled = false;
+    const organizationId = selectedOrg.id;
+
+    async function loadTransactions() {
+      setTxLoading(true);
+      setError("");
+      try {
+        const data = await api.getTransactions(organizationId);
+        if (!cancelled) setTransactions(data);
+      } catch {
+        if (!cancelled) setError("Failed to load transactions");
+      } finally {
+        if (!cancelled) setTxLoading(false);
+      }
+    }
+
+    void loadTransactions();
+
+    return () => {
+      cancelled = true;
+    };
   }, [selectedOrg]);
 
   const handleExtract = useCallback(
@@ -100,8 +115,8 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="w-full max-w-5xl mx-auto p-4 sm:p-6 space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">Welcome {user.name}</h1>
           <p className="text-sm text-gray-500">{user.email}</p>
@@ -114,9 +129,9 @@ export default function DashboardPage() {
         </button>
       </div>
 
-      <OrgSelector />
+      <OrgSelector onError={setError} />
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="border rounded-lg p-4 text-center">
           <p className="text-3xl font-bold">{stats.count}</p>
           <p className="text-sm text-gray-500 mt-1">Transactions</p>
@@ -140,7 +155,13 @@ export default function DashboardPage() {
         </p>
       )}
 
-      <TransactionExtractor onExtract={handleExtract} />
+      {selectedOrg ? (
+        <TransactionExtractor onExtract={handleExtract} />
+      ) : (
+        <div className="border rounded-lg p-4 text-sm text-gray-500">
+          Create an organization to start extracting transactions.
+        </div>
+      )}
 
       <TransactionTable
         transactions={transactions}

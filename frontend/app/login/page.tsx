@@ -4,6 +4,10 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 
+function getErrorMessage(err: unknown) {
+  return err instanceof Error ? err.message : "Invalid email or password";
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const { user, loading, signIn, signUp } = useAuth();
@@ -31,8 +35,8 @@ export default function LoginPage() {
         await signIn(email, password);
       }
       router.push("/dashboard");
-    } catch (err: any) {
-      setError(err.message || "Invalid email or password");
+    } catch (err: unknown) {
+      setError(getErrorMessage(err));
     } finally {
       setSubmitting(false);
     }
